@@ -19,7 +19,8 @@ class Node(object):
         self.left = left
         self.width = w
         self.height = h
-        self.tipo = tipo
+        self.__tipo__ = tipo
+        self.himm = 0
 
 
     def putObstaculo(self, p, value = CHEIO):
@@ -58,8 +59,47 @@ class Node(object):
                         self.SE.tipo = value
 
         if (self.tipo == MISTO) and (self.NO.tipo == self.NE.tipo == self.SE.tipo == self.SO.tipo != MISTO):
-            self.tipo = self.NE.tipo
-            self.NE = self.NO = self.SE = self.SO = None
+            maxi = max(self.NE.himm,self.NO.himm,self.SO.himm,self.SE.himm)
+            mini = min(self.NE.himm,self.NO.himm,self.SO.himm,self.SE.himm)
+            
+            if (maxi-mini) < 5:
+                self.tipo = self.NE.tipo
+                self.himm = maxi
+                self.NE = self.NO = self.SE = self.SO = None
+
+
+    def addHIMM(self):
+        self.himm += 3
+        if self.himm > 15:
+            self.himm = 15
+        
+        if self.himm >= 6:
+            self.__tipo__ = CHEIO
+
+
+    def subHIMM(self):
+        self.himm -= 1
+        if self.himm < 0:
+            self.himm = 0
+
+        if self.himm < 6:
+            self.__tipo__ = VAZIO
+    
+    @property
+    def tipo(self):
+        return self.__tipo__
+
+    @tipo.setter
+    def tipo(self,value):
+        if not value in [UNKNOWN,VAZIO, CHEIO,MISTO]:
+            raise Exception("NODE: Type not valid")
+        
+        if self.__tipo__ == CHEIO:
+            self.addHIMM()
+        elif self.__tipo__ == VAZIO:
+            self.subHIMM()
+        else:
+            self.__tipo__ = value
 
 
     def putObstaculo2(self,roboPos,leituras):
@@ -125,13 +165,14 @@ class Node(object):
         #Arrumar para desenhar somente o que for visivel
         #if self.isInside((minx,miny)) or self.isInside((minx,maxy)) or self.isInside((maxx,maxy)) or self.isInside((maxx,miny)):
 
-        p = (self.left - minx)*sx, s[1] - (self.top - miny)*sy
-        size = (self.width*sx),-(self.height*sy)
+        p = floor(self.left - minx)*sx, s[1] - floor(self.top - miny)*sy
+        size = ceil(self.width*sx),-ceil(self.height*sy)
         if self.tipo == CHEIO:
             pygame.draw.rect(screen,(0,0,0),pygame.Rect(p, size),0)
+            pygame.draw.rect(screen,(0,0,0),pygame.Rect(p, size),1)
         elif self.tipo == VAZIO:
             pygame.draw.rect(screen,(255,255,255),pygame.Rect(p, size),0)
-            pygame.draw.rect(screen,(255,0,0),pygame.Rect(p, size),2)
+            pygame.draw.rect(screen,(0,0,0),pygame.Rect(p, size),1)
         elif self.tipo == UNKNOWN:
             pygame.draw.rect(screen,(0,0,0),pygame.Rect(p, size),1)
         elif self.tipo == MISTO:
