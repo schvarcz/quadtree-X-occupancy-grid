@@ -1,12 +1,18 @@
 from math import sin, cos, pi
 from mapa import *
 from quadtree import *
+from matplotlib import pyplot as plt
 
+#Mode
+QUAD = 0
+GRID = 1
+
+quadLen = []
 class RodaSimulacao(object):
     def __init__(self):
         self.baseDados = open("datasets/mapeamento_esparso.txt",'r')
         self.map = Mapa()
-        self.quadRoot = Node()
+        self.quadRoot = Quadtree()
         self.k = None
         self.center = [9300,-6600]
         self.scale = 4.
@@ -17,6 +23,11 @@ class RodaSimulacao(object):
         self.map.center = self.center
         self.quadRoot.scale = self.scale
         self.quadRoot.center = self.center
+        self.goal = self.start = None
+
+        self.mode = QUAD
+        self.interative = True
+        self.sweepArea = True
 
 
     def listenControls(self):
@@ -32,20 +43,28 @@ class RodaSimulacao(object):
             if event.type == pygame.KEYUP:
                 self.k = None
             if self.k != None:
-                if(self.k == pygame.K_w):
+                if self.k == pygame.K_UP:
                     self.center[1]+=300
-                if(self.k == pygame.K_s):
+                if self.k == pygame.K_DOWN:
                     self.center[1]-=300
-                if(self.k == pygame.K_d):
+                if self.k == pygame.K_RIGHT:
                     self.center[0]+=300
-                if(self.k == pygame.K_a):
+                if self.k == pygame.K_LEFT:
                     self.center[0]-=300
-                if(self.k == pygame.K_EQUALS):
+                if self.k == pygame.K_EQUALS:
                     self.scale+=0.25
-                if(self.k == pygame.K_MINUS):
+                if self.k == pygame.K_MINUS:
                     self.scale-=0.25
-                if(self.k == pygame.K_l):
+                if self.k == pygame.K_l:
                     self.followRobot = not self.followRobot
+                if self.k == pygame.K_s:
+                    self.mode += 1
+                    self.mode %= 2
+                if self.k == pygame.K_q:
+                    self.quadRoot.mode += 1
+                    self.quadRoot.mode %= 2
+                if self.k == pygame.K_i:
+                    self.interative = not self.interative
                 print "scale: ", self.scale
                 print "center: ", self.center
 
@@ -54,6 +73,18 @@ class RodaSimulacao(object):
                 self.quadRoot.scale = self.scale
                 self.quadRoot.center = self.center
 
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    if self.start == None:
+                        self.start = list(pygame.mouse.get_pos())
+                    elif self.goal == None:
+                        self.goal = list(pygame.mouse.get_pos())
+                    else:
+                        self.goal = self.start = None
+                if event.button == 3:
+                    self.goal = self.start = None
+
+
        
     def run(self):
 
@@ -61,6 +92,8 @@ class RodaSimulacao(object):
 
         pygame.display.set_mode((1024,600),pygame.RESIZABLE)
         pygame.display.update()
+        plt.ion()
+        f = plt.figure()
         for l in self.baseDados:
             l = l.split(',')
             x,y,th = [float(i) for i in l[:3]]
@@ -69,37 +102,61 @@ class RodaSimulacao(object):
             if self.followRobot:
                 self.center = self.pos
                 self.map.center = self.pos
+                self.quadtree.center = self.pos
 
-#            anguloLeitura = 180
-#            for leitura in leituras:
-#                if(leitura <= 5000):
-#                    angle = anguloLeitura+th-90
-#                    rad = angle*pi/180.
-#                    lx, ly = x+cos(rad)*leitura, y+sin(rad)*leitura
-#                    self.quadRoot.putObstaculo((lx,ly))
-#                    self.map.putObstaculo(lx,ly)
-#                anguloLeitura -= 1
+            if self.sweepArea:
+                if leituras != []:
+                    self.map.putObstaculoSweep((x,y,th),leituras)
+                    self.quadRoot.putObstaculoSweep((x,y,th),leituras)
+            else:
+                anguloLeitura = 180
+                for leitura in leituras:
+                    if(leitura <= 5000):
+                        angle = anguloLeitura+th-90
+                        rad = angle*pi/180.
+                        lx, ly = x+cos(rad)*leitura, y+sin(rad)*leitura
+                        self.quadRoot.putObstaculo((lx,ly))
+                        self.map.putObstaculo(lx,ly)
+                    anguloLeitura -= 1
 
-#            if leituras != []:
-#                self.map.putObstaculo2((x,y,th),leituras)
-            if leituras != []:
-                self.quadRoot.putObstaculo2((x,y,th),leituras)
-            self.listenControls()
-            screen = pygame.display.get_surface()
-            screen.fill((204,204,204))
-            self.quadRoot.draw(screen)
-            self.quadRoot.drawRobot(screen,x,y,th,leituras)
-            #self.map.draw(screen)
-            #self.map.drawRobot(screen,x,y)
-            pygame.display.update()
-            pygame.time.wait(33)
+            quadLen.append(len(self.quadRoot))
+
+            ##################
+            #  Show Results  #
+            ##################
+            if self.interative:
+                self.listenControls()
+                screen = pygame.display.get_surface()
+                screen.fill((204,204,204))
+                if self.mode == QUAD:
+                    self.quadRoot.draw(screen)
+                    self.quadRoot.drawRobot(screen,x,y,th,leituras)
+                if self.mode == GRID:
+                    self.map.draw(screen)
+                    self.map.drawRobot(screen,x,y)
+                f.clear()
+                plt.plot(quadLen)
+                f.axes[0].set_xlim([0,388])
+                f.canvas.get_tk_widget().update() 
+                f.canvas.draw()
+                pygame.display.update()
+                pygame.time.wait(33)
+
+        plt.plot(quadLen)
+        f.axes[0].set_xlim([0,388])
         
         while(True):
             self.listenControls()
             screen = pygame.display.get_surface()
             screen.fill((204,204,204))
-            #self.map.draw(screen)
-            self.quadRoot.draw(screen)
+            self.map.pathPlannig(self.start,self.goal)
+            if self.mode == GRID:
+                self.map.draw(screen)
+            if self.mode == QUAD:
+                self.quadRoot.draw(screen)
+
+            f.canvas.get_tk_widget().update() 
+            f.canvas.draw()
             pygame.display.update()
 
 if __name__ == "__main__":

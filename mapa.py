@@ -43,7 +43,7 @@ class Mapa(object):
                             (max(self.boundingBox[1][0],x), max(self.boundingBox[1][1],y)))
 
 
-    def putObstaculo2(self,roboPos,leituras):
+    def putObstaculoSweep(self,roboPos,leituras):
         x,y = self.worldToMap(roboPos[0],roboPos[1])
         pad = 5500./self.cellXSize
 
@@ -63,9 +63,11 @@ class Mapa(object):
                 if -90. <= angle <= 90.:
 
                     r = leituras[int(90-angle)]
+                    r = min(r,5000)
+
                     d = sqrt(pow(center[1]-roboPos[1],2) + pow(center[0]-roboPos[0],2))
 
-                    if r-variacao < d < r+variacao:
+                    if r < 5000 and r-variacao < d < r+variacao:
                         self.map[ny][nx].addHimm()
                         self.map[ny][nx].isVisited = True
                     elif d <= r-variacao:
@@ -117,7 +119,7 @@ class Mapa(object):
         for x in xrange(int(bminx),int(bmaxx)):
             for y in xrange(int(bminy),int(bmaxy)):
                 r = pygame.Rect(floor(sx*(x-minx)), floor(sy*(y-miny)), ceil(sx), ceil(sy))
-                #print r
+
                 if self.map[y][x].isObstacle:
                     pygame.draw.rect(screen,(0,0,0),r,0)
                 elif self.map[y][x].isVisited:
