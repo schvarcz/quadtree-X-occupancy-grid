@@ -8,6 +8,8 @@ QUAD = 0
 GRID = 1
 
 quadLen = []
+mapLen = []
+shot = 1
 class RodaSimulacao(object):
     def __init__(self):
         self.baseDados = open("datasets/mapeamento_esparso.txt",'r')
@@ -60,11 +62,20 @@ class RodaSimulacao(object):
                 if self.k == pygame.K_s:
                     self.mode += 1
                     self.mode %= 2
+                    if self.start != None:
+                        if self.mode == QUAD:                
+                            self.quadRoot.pathPlannig(pygame.display.get_surface(),self.start,self.goal)
+                        if self.mode == GRID:
+                            self.map.pathPlannig(pygame.display.get_surface(),self.start,self.goal)
                 if self.k == pygame.K_q:
                     self.quadRoot.mode += 1
                     self.quadRoot.mode %= 2
                 if self.k == pygame.K_i:
                     self.interative = not self.interative
+                if self.k == pygame.K_a:
+                    global shot
+                    pygame.image.save(pygame.display.get_surface(),"screenshot_{0}.png".format(shot))
+                    shot += 1
                 print "scale: ", self.scale
                 print "center: ", self.center
 
@@ -81,6 +92,11 @@ class RodaSimulacao(object):
                         self.goal = list(pygame.mouse.get_pos())
                     else:
                         self.goal = self.start = None
+
+                    if self.mode == QUAD:                
+                        self.quadRoot.pathPlannig(pygame.display.get_surface(),self.start,self.goal)
+                    if self.mode == GRID:
+                        self.map.pathPlannig(pygame.display.get_surface(),self.start,self.goal)
                 if event.button == 3:
                     self.goal = self.start = None
 
@@ -90,7 +106,7 @@ class RodaSimulacao(object):
 
         pygame.init()
 
-        pygame.display.set_mode((1024,600),pygame.RESIZABLE)
+        pygame.display.set_mode((700,700),pygame.RESIZABLE)
         pygame.display.update()
         plt.ion()
         f = plt.figure()
@@ -120,6 +136,7 @@ class RodaSimulacao(object):
                     anguloLeitura -= 1
 
             quadLen.append(len(self.quadRoot))
+            mapLen.append(len(self.map))
 
             ##################
             #  Show Results  #
@@ -142,21 +159,27 @@ class RodaSimulacao(object):
                 pygame.display.update()
                 pygame.time.wait(33)
 
+        print "Quadtree max: ", max(quadLen)
+        print "Quadtree size: ", quadLen[-1]
+        print "Map size: ", mapLen[-1]
+        f.clear()
         plt.plot(quadLen)
+#        plt.plot(mapLen)
         f.axes[0].set_xlim([0,388])
+        f.canvas.draw()
         
         while(True):
             self.listenControls()
             screen = pygame.display.get_surface()
             screen.fill((204,204,204))
-            self.map.pathPlannig(self.start,self.goal)
             if self.mode == GRID:
                 self.map.draw(screen)
+                self.map.drawPathPlanning(screen)
             if self.mode == QUAD:
                 self.quadRoot.draw(screen)
+                self.quadRoot.drawPathPlanning(screen)
 
             f.canvas.get_tk_widget().update() 
-            f.canvas.draw()
             pygame.display.update()
 
 if __name__ == "__main__":
