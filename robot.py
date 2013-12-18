@@ -118,7 +118,7 @@ class RodaSimulacao(object):
             if self.followRobot:
                 self.center = self.pos
                 self.map.center = self.pos
-                self.quadtree.center = self.pos
+                self.quadRoot.center = self.pos
 
             if self.sweepArea:
                 if leituras != []:
