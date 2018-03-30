@@ -2,7 +2,7 @@
 import time
 import pygame
 from pygame.locals import *
-from math import ceil, floor, atan2, degrees, radians, sqrt
+from math import ceil, floor, atan2, degrees, radians, sqrt, cos, sin
 
 class Celula(object):
     def __init__(self):
@@ -93,16 +93,16 @@ class Mapa(object):
         x += self.width/2.
 
         y /= self.cellYSize
-        y = self.height/2. - y 
+        y = self.height/2. - y
         return int(round(x)),int(round(y))
 
-    
+
     def mapToWorld(self,pt):
         x, y = pt
         x -= self.width/2.
         x *= self.cellXSize
 
-        y = self.height/2. - y 
+        y = self.height/2. - y
         y *= self.cellYSize
         return x,y
 
@@ -194,8 +194,24 @@ class Mapa(object):
                             int(1.*self.scale))
 
 
-    def drawRobot(self,screen,x,y):
-        self.drawPoint(screen,self.worldToMap((x,y)),(255,0,0))
+    def drawRobot(self,screen,x,y,th,leituras):
+        robot = (x,y)
+
+        self.drawPoint(screen,self.worldToMap(robot),(255,0,0))
+
+        if leituras != []:
+            dLaser = [self.worldToMap(robot)]
+            angle = 90+th
+            for r in leituras:
+                if r > 5000:
+                    r = 5000
+                dLaser.append(self.worldToMap((
+                                x + r*cos(radians(angle)) ,
+                                y + r*sin(radians(angle)))))
+                angle -= 1
+
+            # pygame.draw.polygon(screen,(0,0,255),dLaser,0)
+            self.drawPolygon(screen, dLaser, (0,0,255))
 
 
     def drawPathPlanning(self,screen):
@@ -214,12 +230,14 @@ class Mapa(object):
 
     def drawPoint(self,screen,pt,color = (0,255,0), size = 1):
         pt = self.mapToScreen(screen,pt)
-
         pygame.draw.circle(screen,color,pt,int(size*self.scale),0)
+
+    def drawPolygon(self,screen,polygon,color = (0,255,0), size = 1):
+        nPolygon = [self.mapToScreen(screen,pt) for pt in polygon ]
+        pygame.draw.polygon(screen,color,nPolygon,0)
 
 
     def pathPlannig(self,screen, start, goal):
-
         if None in [start,goal]:
             self.path = []
         if start != None:
@@ -293,6 +311,4 @@ class Mapa(object):
                 last = current
 
     def __len__(self):
-        return self.width*self.height 
-
-
+        return self.width*self.height

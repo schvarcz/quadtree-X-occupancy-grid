@@ -27,7 +27,7 @@ class RodaSimulacao(object):
         self.quadRoot.center = self.center
         self.goal = self.start = None
 
-        self.mode = QUAD
+        self.mode = GRID
         self.interative = True
         self.sweepArea = True
 
@@ -36,7 +36,7 @@ class RodaSimulacao(object):
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYUP and event.key == pygame.K_ESCAPE):
                 pygame.quit()
-                return 
+                return
             if event.type == pygame.VIDEORESIZE:
                 w, h = event.size
                 pygame.display.set_mode((w,h),pygame.RESIZABLE)
@@ -63,7 +63,7 @@ class RodaSimulacao(object):
                     self.mode += 1
                     self.mode %= 2
                     if self.start != None:
-                        if self.mode == QUAD:                
+                        if self.mode == QUAD:
                             self.quadRoot.pathPlannig(pygame.display.get_surface(),self.start,self.goal)
                         if self.mode == GRID:
                             self.map.pathPlannig(pygame.display.get_surface(),self.start,self.goal)
@@ -93,7 +93,7 @@ class RodaSimulacao(object):
                     else:
                         self.goal = self.start = None
 
-                    if self.mode == QUAD:                
+                    if self.mode == QUAD:
                         self.quadRoot.pathPlannig(pygame.display.get_surface(),self.start,self.goal)
                     if self.mode == GRID:
                         self.map.pathPlannig(pygame.display.get_surface(),self.start,self.goal)
@@ -101,7 +101,7 @@ class RodaSimulacao(object):
                     self.goal = self.start = None
 
 
-       
+
     def run(self):
 
         pygame.init()
@@ -150,14 +150,17 @@ class RodaSimulacao(object):
                     self.quadRoot.drawRobot(screen,x,y,th,leituras)
                 if self.mode == GRID:
                     self.map.draw(screen)
-                    self.map.drawRobot(screen,x,y)
+                    self.map.drawRobot(screen,x,y,th,leituras)
                 f.clear()
                 plt.plot(quadLen)
                 f.axes[0].set_xlim([0,388])
-                f.canvas.get_tk_widget().update() 
+                f.canvas.get_tk_widget().update()
                 f.canvas.draw()
                 pygame.display.update()
                 pygame.time.wait(33)
+                global shot
+                pygame.image.save(pygame.display.get_surface(),"imgs/screenshot_{0}.png".format(shot))
+                shot += 1
 
         print "Quadtree max: ", max(quadLen)
         print "Quadtree size: ", quadLen[-1]
@@ -165,9 +168,9 @@ class RodaSimulacao(object):
         f.clear()
         plt.plot(quadLen)
 #        plt.plot(mapLen)
-        f.axes[0].set_xlim([0,388])
+        # f.axes[0].set_xlim([0,388])
         f.canvas.draw()
-        
+
         while(True):
             self.listenControls()
             screen = pygame.display.get_surface()
@@ -179,9 +182,11 @@ class RodaSimulacao(object):
                 self.quadRoot.draw(screen)
                 self.quadRoot.drawPathPlanning(screen)
 
-            f.canvas.get_tk_widget().update() 
+            f.canvas.get_tk_widget().update()
             pygame.display.update()
 
 if __name__ == "__main__":
     r = RodaSimulacao()
+    r.mode = QUAD
+    r.mode = GRID
     r.run()
